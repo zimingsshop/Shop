@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ziming's Goods — Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #f5f0e8;
+      --dark: #1a1a18;
+      --mid: #3a3a35;
+      --accent-berry: #6b2d5e;
+      --accent-mango: #d4731a;
+      --accent-kiwi: #3a7d44;
+      --bubble: rgba(255,255,255,0.55);
+      --card-bg: #ffffff;
+      --border: rgba(26,26,24,0.1);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── BUBBLES BG ── */
+    .bubbles-bg {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bubble {
+      position: absolute; border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      animation: rise linear infinite;
+    }
+    @keyframes rise {
+      0%   { transform: translateY(110vh) scale(1);   opacity: 0; }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.3; }
+      100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2.5rem;
+      background: rgba(245,240,232,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; font-style: italic; letter-spacing: -.5px;
+      color: var(--dark);
+    }
+    .nav-logo span { color: var(--accent-berry); }
+    .cart-btn {
+      position: relative; cursor: pointer;
+      background: var(--dark); color: var(--cream);
+      border: none; border-radius: 50px;
+      padding: .55rem 1.3rem;
+      font-family: 'DM Sans', sans-serif; font-size: .85rem; font-weight: 500;
+      letter-spacing: .03em; cursor: pointer;
+      transition: background .2s;
+    }
+    .cart-btn:hover { background: var(--accent-berry); }
+    .cart-count {
+      position: absolute; top: -6px; right: -6px;
+      background: var(--accent-mango); color: #fff;
+      border-radius: 50%; width: 20px; height: 20px;
+      font-size: .7rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      display: none;
+    }
+
+    /* ── PAGES ── */
+    .page { display: none; position: relative; z-index: 1; }
+    .page.active { display: block; }
+
+    /* ── SHOP PAGE ── */
+    .shop-header {
+      text-align: center; padding: 4rem 2rem 2rem;
+    }
+    .shop-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      line-height: 1.1; margin-bottom: .8rem;
+    }
+    .shop-header h1 em { font-style: italic; color: var(--accent-berry); }
+    .shop-header p {
+      color: var(--mid); font-weight: 300; font-size: 1.05rem;
+      max-width: 480px; margin: 0 auto;
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 2rem; max-width: 1100px; margin: 3rem auto 5rem;
+      padding: 0 2rem;
+    }
+
+    .product-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      border: 1px solid var(--border);
+      transition: transform .3s, box-shadow .3s;
+      position: relative; overflow: hidden;
+    }
+    .product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(0,0,0,.12); }
+    .product-card::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 140px; height: 140px; border-radius: 50%;
+      opacity: .08;
+    }
+    .card-berry::before  { background: var(--accent-berry); }
+    .card-mango::before  { background: var(--accent-mango); }
+    .card-kiwi::before   { background: var(--accent-kiwi);  }
+
+    .can-illustration {
+      width: 120px; height: 160px;
+      margin: 0 auto 1.5rem;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3.5rem;
+      position: relative;
+    }
+    .can-berry { background: linear-gradient(160deg, #8a3575 0%, #4a1a44 100%); }
+    .can-mango { background: linear-gradient(160deg, #e8853a 0%, #a84e10 100%); }
+    .can-kiwi  { background: linear-gradient(160deg, #5aaa66 0%, #2a5e32 100%); }
+
+    .can-illustration .can-label {
+      position: absolute; bottom: 18px;
+      font-family: 'DM Sans', sans-serif; font-size: .6rem; font-weight: 700;
+      color: rgba(255,255,255,.8); letter-spacing: .12em; text-transform: uppercase;
+    }
+    .can-illustration .can-shine {
+      position: absolute; top: 16px; left: 22px;
+      width: 22px; height: 60px; border-radius: 20px;
+      background: rgba(255,255,255,.18);
+      transform: rotate(-10deg);
+    }
+
+    .product-tag {
+      font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      padding: .3rem .75rem; border-radius: 50px; display: inline-block;
+      margin-bottom: .75rem;
+    }
+    .tag-berry { background: #f3e8f1; color: var(--accent-berry); }
+    .tag-mango { background: #fdf0e3; color: var(--accent-mango); }
+    .tag-kiwi  { background: #e6f4e8; color: var(--accent-kiwi);  }
+
+    .product-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; margin-bottom: .4rem; line-height: 1.25;
+    }
+    .product-sub { color: var(--mid); font-size: .88rem; font-weight: 300; margin-bottom: 1.2rem; }
+    .product-price {
+      font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem;
+    }
+
+    .qty-control {
+      display: flex; align-items: center; gap: .75rem; margin-bottom: 1.2rem;
+    }
+    .qty-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: transparent; font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s; font-family: inherit;
+    }
+    .qty-btn:hover { border-color: var(--dark); background: var(--dark); color: var(--cream); }
+    .qty-display { font-size: 1.05rem; font-weight: 600; min-width: 24px; text-align: center; }
+
+    .add-btn {
+      width: 100%; padding: .85rem;
+      border: none; border-radius: 12px;
+      font-family: 'DM Sans', sans-serif; font-size: .95rem; font-weight: 600;
+      cursor: pointer; transition: all .2s; letter-spacing: .02em;
+      position: relative; overflow: hidden;
+    }
+    .add-btn-berry { background: var(--accent-berry); color: #fff; }
+    .add-btn-mango { background: var(--accent-mango); color: #fff; }
+    .add-btn-kiwi  { background: var(--accent-kiwi);  color: #fff; }
+    .add-btn:hover { filter: brightness(1.12); transform: scale(1.02); }
+    .add-btn:active { transform: scale(.98); }
+    .add-btn.added::after { content: '✓ Added!'; }
+    .add-btn.added { pointer-events: none; }
+
+    /* ── CHECKOUT PAGE ── */
+    .checkout-wrap {
+      max-width: 860px; margin: 0 auto; padding: 3rem 2rem 5rem;
+    }
+    .checkout-wrap h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem; margin-bottom: 2rem;
+    }
+    .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 2.5rem; }
+    @media (max-width: 700px) { .checkout-layout { grid-template-columns: 1fr; } }
+
+    .form-section {
+      background: var(--card-bg); border-radius: 20px; padding: 2rem;
+      border: 1px solid var(--border);
+    }
+    .form-section h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem; margin-bottom: 1.4rem;
+      padding-bottom: .8rem; border-bottom: 1px solid var(--border);
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+    .form-group label { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--mid); }
+    .form-group input, .form-group select {
+      padding: .75rem 1rem; border-radius: 10px;
+      border: 1.5px solid var(--border);
+      font-family: 'DM Sans', sans-serif; font-size: .95rem;
+      background: var(--cream); color: var(--dark);
+      transition: border-color .2s; outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent-berry); }
+
+    /* Order summary */
+    .order-summary {
+      background: var(--dark); color: var(--cream);
+      border-radius: 20px; padding: 2rem; height: fit-content;
+    }
+    .order-summary h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem; margin-bottom: 1.4rem;
+      padding-bottom: .8rem; border-bottom: 1px solid rgba(255,255,255,.15);
+    }
+    .order-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .6rem 0; border-bottom: 1px solid rgba(255,255,255,.08);
+      font-size: .9rem;
+    }
+    .order-item-name { font-weight: 400; max-width: 200px; line-height: 1.3; }
+    .order-item-price { font-weight: 600; white-space: nowrap; }
+    .order-totals { margin-top: 1rem; }
+    .order-line { display: flex; justify-content: space-between; padding: .35rem 0; font-size: .9rem; color: rgba(245,240,232,.7); }
+    .order-total { display: flex; justify-content: space-between; padding: .8rem 0 0; font-size: 1.1rem; font-weight: 700; color: var(--cream); border-top: 1px solid rgba(255,255,255,.2); margin-top: .4rem; }
+    .empty-cart { text-align: center; color: rgba(245,240,232,.5); padding: 1rem 0; font-style: italic; }
+
+    .place-order-btn {
+      width: 100%; padding: 1rem; margin-top: 1.5rem;
+      background: var(--accent-berry); color: #fff;
+      border: none; border-radius: 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all .2s; letter-spacing: .03em;
+    }
+    .place-order-btn:hover { filter: brightness(1.15); }
+    .place-order-btn:disabled { opacity: .4; cursor: not-allowed; filter: none; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: .4rem;
+      color: var(--mid); font-size: .9rem; cursor: pointer;
+      background: none; border: none; font-family: inherit;
+      margin-bottom: 1.5rem; transition: color .2s;
+    }
+    .back-link:hover { color: var(--dark); }
+
+    /* ── CONFIRMATION PAGE ── */
+    .confirm-wrap {
+      max-width: 640px; margin: 0 auto; padding: 4rem 2rem 5rem; text-align: center;
+    }
+    .confirm-icon {
+      width: 88px; height: 88px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-kiwi), #52c468);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; margin: 0 auto 2rem;
+      animation: popIn .5s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .confirm-wrap h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem; margin-bottom: .8rem;
+    }
+    .confirm-wrap > p { color: var(--mid); font-size: 1rem; margin-bottom: 2.5rem; }
+    .confirm-order-num {
+      font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--mid); font-weight: 600; margin-bottom: .3rem;
+    }
+    .confirm-order-id {
+      font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 2.5rem;
+    }
+
+    .timeline {
+      background: var(--card-bg); border-radius: 20px; padding: 2rem;
+      border: 1px solid var(--border); text-align: left; margin-bottom: 2rem;
+    }
+    .timeline h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem; margin-bottom: 1.5rem;
+    }
+    .timeline-steps { position: relative; }
+    .timeline-step {
+      display: flex; gap: 1.2rem; align-items: flex-start;
+      padding-bottom: 1.4rem; position: relative;
+    }
+    .timeline-step:not(:last-child)::after {
+      content: ''; position: absolute; left: 17px; top: 38px;
+      width: 2px; height: calc(100% - 20px);
+      background: var(--border);
+    }
+    .step-dot {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: .9rem;
+      border: 2px solid var(--border);
+    }
+    .step-dot.done { background: var(--accent-kiwi); border-color: var(--accent-kiwi); color: #fff; }
+    .step-dot.active { background: var(--accent-mango); border-color: var(--accent-mango); color: #fff; animation: pulse 1.8s infinite; }
+    .step-dot.pending { background: var(--cream); color: var(--mid); }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(212,115,26,.4)} 50%{box-shadow:0 0 0 8px rgba(212,115,26,0)} }
+    .step-info h4 { font-size: .95rem; font-weight: 600; margin-bottom: .15rem; }
+    .step-info p { font-size: .82rem; color: var(--mid); font-weight: 300; }
+    .step-time { margin-left: auto; font-size: .8rem; color: var(--mid); white-space: nowrap; padding-top: .15rem; }
+
+    .eta-box {
+      background: linear-gradient(135deg, var(--accent-berry) 0%, #4a1a44 100%);
+      color: #fff; border-radius: 20px; padding: 1.8rem; margin-bottom: 2rem;
+    }
+    .eta-box h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: .5rem; opacity: .85; }
+    .eta-box .eta-time { font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 700; }
+    .eta-box .eta-date { font-size: .9rem; opacity: .7; margin-top: .2rem; }
+
+    .shop-again-btn {
+      background: var(--dark); color: var(--cream);
+      border: none; border-radius: 12px;
+      padding: .9rem 2.5rem;
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .shop-again-btn:hover { background: var(--accent-berry); }
+
+    /* Notification toast */
+    .toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--dark); color: var(--cream);
+      padding: .75rem 1.5rem; border-radius: 50px;
+      font-size: .9rem; font-weight: 500;
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999; pointer-events: none;
+    }
+    /* ── PAYMENT TOGGLE ── */
+    .pay-toggle {
+      display: flex; gap: .6rem; margin-bottom: 1.4rem;
+    }
+    .pay-tab {
+      flex: 1; padding: .65rem 1rem; border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--cream); color: var(--mid);
+      font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .pay-tab.active { background: var(--dark); color: var(--cream); border-color: var(--dark); }
+    .pay-tab:hover:not(.active) { border-color: var(--dark); }
+
+    .cash-notice {
+      background: #f0faf2; border: 1.5px solid #b8e6c1; border-radius: 12px;
+      padding: 1.4rem; text-align: center;
+    }
+    .cash-icon { font-size: 2.4rem; margin-bottom: .6rem; }
+    .cash-notice p { color: var(--mid); font-size: .9rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<!-- Bubbles -->
+<div class="bubbles-bg" id="bubblesContainer"></div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">Ziming's <span>Goods</span></div>
+  <button class="cart-btn" onclick="goToCheckout()">
+    🛒 Checkout
+    <span class="cart-count" id="cartCount">0</span>
+  </button>
+</nav>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ════ PAGE 1: SHOP ════ -->
+<div class="page active" id="shopPage">
+  <div class="shop-header">
+    <h1><em>Kirkland's</em><br>Sparkling Collection</h1>
+    <p>Premium flavored sparkling water. Bold taste, zero sugar, endless fizz.</p>
+  </div>
+
+  <div class="products-grid">
+
+    <!-- Berry -->
+    <div class="product-card card-berry">
+      <div class="can-illustration can-berry">
+        🫐
+        <span class="can-shine"></span>
+        <span class="can-label">Kirkland</span>
+      </div>
+      <span class="product-tag tag-berry">Best Seller</span>
+      <h2 class="product-name">Black Raspberry</h2>
+      <p class="product-sub">Bold, tart, deeply satisfying fizz</p>
+      <div class="product-price">$1.99</div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty('berry',-1)">−</button>
+        <span class="qty-display" id="qty-berry">1</span>
+        <button class="qty-btn" onclick="changeQty('berry',1)">+</button>
+      </div>
+      <button class="add-btn add-btn-berry" id="btn-berry" onclick="addToCart('berry','Black Raspberry Sparkling',1.99)">
+        Add to Cart
+      </button>
+    </div>
+
+    <!-- Mango -->
+    <div class="product-card card-mango">
+      <div class="can-illustration can-mango">
+        🥭
+        <span class="can-shine"></span>
+        <span class="can-label">Kirkland</span>
+      </div>
+      <span class="product-tag tag-mango">Tropical Fave</span>
+      <h2 class="product-name">Orange Mango</h2>
+      <p class="product-sub">Sun-ripe citrus meets island sweetness</p>
+      <div class="product-price">$1.99</div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty('mango',-1)">−</button>
+        <span class="qty-display" id="qty-mango">1</span>
+        <button class="qty-btn" onclick="changeQty('mango',1)">+</button>
+      </div>
+      <button class="add-btn add-btn-mango" id="btn-mango" onclick="addToCart('mango','Orange Mango Sparkling',1.99)">
+        Add to Cart
+      </button>
+    </div>
+
+    <!-- Kiwi -->
+    <div class="product-card card-kiwi">
+      <div class="can-illustration can-kiwi">
+        🥝
+        <span class="can-shine"></span>
+        <span class="can-label">Kirkland</span>
+      </div>
+      <span class="product-tag tag-kiwi">Fan Favorite</span>
+      <h2 class="product-name">Kiwi Strawberry</h2>
+      <p class="product-sub">Sweet meets tangy in every sip</p>
+      <div class="product-price">$1.99</div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty('kiwi',-1)">−</button>
+        <span class="qty-display" id="qty-kiwi">1</span>
+        <button class="qty-btn" onclick="changeQty('kiwi',1)">+</button>
+      </div>
+      <button class="add-btn add-btn-kiwi" id="btn-kiwi" onclick="addToCart('kiwi','Kiwi Strawberry Sparkling',1.99)">
+        Add to Cart
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ PAGE 2: CHECKOUT ════ -->
+<div class="page" id="checkoutPage">
+  <div class="checkout-wrap">
+    <button class="back-link" onclick="goTo('shopPage')">← Back to Shop</button>
+    <h2>Your Checkout</h2>
+    <div class="checkout-layout">
+
+      <div>
+        <div class="form-section">
+          <h3>Delivery Details</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" placeholder="Jane" id="firstName" />
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" placeholder="Smith" id="lastName" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" placeholder="123 Sparkling St" id="address" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>City</label>
+              <input type="text" placeholder="Austin" id="city" />
+            </div>
+            <div class="form-group">
+              <label>ZIP Code</label>
+              <input type="text" placeholder="78701" id="zip" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Delivery Speed</label>
+            <select id="deliverySpeed">
+              <option value="instant">⚡ Instant (5–10 min) — $1.00</option>
+              <option value="overnight">🌙 Overnight — $0.50</option>
+              <option value="oneday">📦 1-Day (12–24 hrs) — $0.25</option>
+              <option value="twoday" selected>🚚 2-Day (24–50 hrs) — Free</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-section" style="margin-top:1.5rem">
+          <h3>Payment</h3>
+          <div class="pay-toggle">
+            <button class="pay-tab active" id="tabCard" onclick="switchPayment('card')">💳 Card</button>
+            <button class="pay-tab" id="tabCash" onclick="switchPayment('cash')">💵 Cash</button>
+          </div>
+          <div id="cardPanel">
+            <div class="form-group">
+              <label>Card Number</label>
+              <input type="text" placeholder="4242 4242 4242 4242" maxlength="19" id="cardNum" oninput="formatCard(this)" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Expiry</label>
+                <input type="text" placeholder="MM / YY" maxlength="7" id="expiry" oninput="formatExpiry(this)" />
+              </div>
+              <div class="form-group">
+                <label>CVV</label>
+                <input type="text" placeholder="•••" maxlength="4" id="cvv" />
+              </div>
+            </div>
+          </div>
+          <div id="cashPanel" style="display:none">
+            <div class="cash-notice">
+              <div class="cash-icon">💵</div>
+              <p>Pay with cash upon delivery. Our driver will collect the exact amount shown in your order total. Please have the correct change ready.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="order-summary">
+        <h3>Order Summary</h3>
+        <div id="summaryItems"></div>
+        <div class="order-totals" id="orderTotals"></div>
+        <button class="place-order-btn" id="placeOrderBtn" onclick="placeOrder()">Place Order →</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════ PAGE 3: CONFIRMATION ════ -->
+<div class="page" id="confirmPage">
+  <div class="confirm-wrap">
+    <div class="confirm-icon">✓</div>
+    <h2>Order Confirmed!</h2>
+    <p>Your sparkling waters are on their way. Here's everything you need to track your delivery.</p>
+
+    <div class="confirm-order-num">Order Number</div>
+    <div class="confirm-order-id" id="orderNum">#KS-000000</div>
+
+    <div class="eta-box">
+      <h3>Estimated Arrival</h3>
+      <div class="eta-time" id="etaTime">—</div>
+      <div class="eta-date" id="etaDate">—</div>
+    </div>
+
+    <div class="timeline">
+      <h3>Delivery Timeline</h3>
+      <div class="timeline-steps" id="timelineSteps"></div>
+    </div>
+
+    <button class="shop-again-btn" onclick="shopAgain()">Shop Again</button>
+  </div>
+</div>
+
+<script>
+  // ── CONSTANTS ──
+  var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // ── STATE ──
+  var cart       = {};
+  var quantities = { berry: 1, mango: 1, kiwi: 1 };
+  var payMethod  = 'card';
+
+  // ── BUBBLES ──
+  (function() {
+    var container = document.getElementById('bubblesContainer');
+    for (var i = 0; i < 18; i++) {
+      var b = document.createElement('div');
+      b.className = 'bubble';
+      var size = Math.random() * 40 + 10;
+      b.style.width  = size + 'px';
+      b.style.height = size + 'px';
+      b.style.left   = (Math.random() * 100) + '%';
+      b.style.animationDuration = (Math.random() * 14 + 8) + 's';
+      b.style.animationDelay    = (Math.random() * 10) + 's';
+      container.appendChild(b);
+    }
+  })();
+
+  // ── DELIVERY EVENT ──
+  document.getElementById('deliverySpeed').addEventListener('change', function() {
+    renderSummary();
+  });
+
+  // ── QUANTITY ──
+  function changeQty(id, delta) {
+    quantities[id] = Math.max(1, quantities[id] + delta);
+    document.getElementById('qty-' + id).textContent = quantities[id];
+  }
+
+  // ── CART ──
+  function addToCart(id, name, price) {
+    var qty = quantities[id];
+    if (cart[id]) {
+      cart[id].qty += qty;
+    } else {
+      cart[id] = { name: name, price: price, qty: qty };
+    }
+    updateCartCount();
+    showToast(qty + '\u00d7 ' + name + ' added \ud83c\udf89');
+    var btn = document.getElementById('btn-' + id);
+    btn.textContent = '\u2713 Added!';
+    btn.disabled = true;
+    setTimeout(function() {
+      btn.textContent = 'Add to Cart';
+      btn.disabled = false;
+    }, 1400);
+  }
+
+  function updateCartCount() {
+    var total = 0;
+    for (var k in cart) total += cart[k].qty;
+    var el = document.getElementById('cartCount');
+    el.textContent = total;
+    el.style.display = total > 0 ? 'flex' : 'none';
+  }
+
+  // ── NAVIGATION ──
+  function goTo(pageId) {
+    var pages = document.querySelectorAll('.page');
+    for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+    document.getElementById(pageId).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function goToCheckout() {
+    var hasItems = false;
+    for (var k in cart) { hasItems = true; break; }
+    if (!hasItems) {
+      showToast('Add something to your cart first!');
+      return;
+    }
+    renderSummary();
+    goTo('checkoutPage');
+  }
+
+  // ── SUMMARY ──
+  function getDeliveryCost() {
+    var speed = document.getElementById('deliverySpeed').value;
+    if (speed === 'instant')   return 1.00;
+    if (speed === 'overnight') return 0.50;
+    if (speed === 'oneday')    return 0.25;
+    return 0;
+  }
+
+  function renderSummary() {
+    var items  = document.getElementById('summaryItems');
+    var totals = document.getElementById('orderTotals');
+    var hasItems = false;
+    for (var k in cart) { hasItems = true; break; }
+
+    if (!hasItems) {
+      items.innerHTML  = '<p class="empty-cart">Your cart is empty</p>';
+      totals.innerHTML = '';
+      return;
+    }
+
+    var subtotal = 0;
+    var html = '';
+    for (var k in cart) {
+      var item = cart[k];
+      var lineTotal = item.price * item.qty;
+      subtotal += lineTotal;
+      html += '<div class="order-item">'
+        + '<span class="order-item-name">' + item.name + ' \u00d7' + item.qty + '</span>'
+        + '<span class="order-item-price">$' + lineTotal.toFixed(2) + '</span>'
+        + '</div>';
+    }
+    items.innerHTML = html;
+
+    var deliveryCost = getDeliveryCost();
+    var tax   = subtotal * 0.0825;
+    var total = subtotal + deliveryCost + tax;
+    var deliveryStr = deliveryCost === 0 ? 'Free' : '$' + deliveryCost.toFixed(2);
+
+    totals.innerHTML = '<div class="order-line"><span>Subtotal</span><span>$' + subtotal.toFixed(2) + '</span></div>'
+      + '<div class="order-line"><span>Delivery</span><span>' + deliveryStr + '</span></div>'
+      + '<div class="order-line"><span>Tax (8.25%)</span><span>$' + tax.toFixed(2) + '</span></div>'
+      + '<div class="order-total"><span>Total</span><span>$' + total.toFixed(2) + '</span></div>';
+  }
+
+  // ── PAYMENT TOGGLE ──
+  function switchPayment(method) {
+    payMethod = method;
+    document.getElementById('cardPanel').style.display = method === 'card' ? 'block' : 'none';
+    document.getElementById('cashPanel').style.display = method === 'cash' ? 'block' : 'none';
+    document.getElementById('tabCard').classList.toggle('active', method === 'card');
+    document.getElementById('tabCash').classList.toggle('active', method === 'cash');
+  }
+
+  // ── CARD FORMATTING ──
+  function formatCard(input) {
+    input.value = input.value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim().slice(0,19);
+  }
+  function formatExpiry(input) {
+    var v = input.value.replace(/\D/g,'');
+    if (v.length >= 2) v = v.slice(0,2) + ' / ' + v.slice(2,4);
+    input.value = v;
+  }
+
+  // ── PLACE ORDER ──
+  // 👇 Replace this URL with your Formspree endpoint after signing up at formspree.io
+  var FORMSPREE_URL = 'https://formspree.io/f/xpqoqgyl';
+
+  function placeOrder() {
+    var baseFields = ['firstName','lastName','address','city','zip'];
+    for (var i = 0; i < baseFields.length; i++) {
+      if (!document.getElementById(baseFields[i]).value.trim()) {
+        showToast('Please fill in all delivery fields.');
+        return;
+      }
+    }
+    if (payMethod === 'card') {
+      var cardFields = ['cardNum','expiry','cvv'];
+      for (var j = 0; j < cardFields.length; j++) {
+        if (!document.getElementById(cardFields[j]).value.trim()) {
+          showToast('Please fill in all card details.');
+          return;
+        }
+      }
+    }
+
+    // Build order summary string
+    var orderLines = [];
+    for (var k in cart) {
+      var item = cart[k];
+      orderLines.push(item.qty + 'x ' + item.name + ' ($' + (item.price * item.qty).toFixed(2) + ')');
+    }
+
+    var speed = document.getElementById('deliverySpeed').value;
+    var speedLabel = { instant: 'Instant (5-10 min) +$1.00', overnight: 'Overnight +$0.50', oneday: '1-Day +$0.25', twoday: '2-Day (Free)' }[speed];
+    var subtotal = 0;
+    for (var k in cart) subtotal += cart[k].price * cart[k].qty;
+    var deliveryCost = getDeliveryCost();
+    var tax = subtotal * 0.0825;
+    var total = subtotal + deliveryCost + tax;
+    var orderId = '#ZG-' + Math.floor(100000 + Math.random() * 900000);
+
+    var payload = {
+      _subject: 'New Order from Ziming\'s Goods ' + orderId,
+      order_id:       orderId,
+      customer_name:  document.getElementById('firstName').value.trim() + ' ' + document.getElementById('lastName').value.trim(),
+      address:        document.getElementById('address').value.trim() + ', ' + document.getElementById('city').value.trim() + ' ' + document.getElementById('zip').value.trim(),
+      items:          orderLines.join(' | '),
+      delivery:       speedLabel,
+      payment_method: payMethod === 'cash' ? 'Cash on Delivery' : 'Card (ending ' + document.getElementById('cardNum').value.trim().slice(-4) + ')',
+      subtotal:       '$' + subtotal.toFixed(2),
+      delivery_fee:   deliveryCost === 0 ? 'Free' : '$' + deliveryCost.toFixed(2),
+      tax:            '$' + tax.toFixed(2),
+      total:          '$' + total.toFixed(2)
+    };
+
+    // Disable button and show loading state
+    var btn = document.getElementById('placeOrderBtn');
+    btn.textContent = 'Sending order...';
+    btn.disabled = true;
+
+    fetch(FORMSPREE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        buildConfirmation(orderId);
+        goTo('confirmPage');
+      } else {
+        showToast('Could not send order. Please try again.');
+        btn.textContent = 'Place Order \u2192';
+        btn.disabled = false;
+      }
+    })
+    .catch(function() {
+      // If Formspree URL isn't set yet, still show confirmation so you can test locally
+      if (FORMSPREE_URL.indexOf('YOUR_FORM_ID') !== -1) {
+        showToast('Add your Formspree URL to go live! Showing confirmation...');
+        setTimeout(function() { buildConfirmation(orderId); goTo('confirmPage'); }, 1800);
+      } else {
+        showToast('Network error. Please try again.');
+      }
+      btn.textContent = 'Place Order \u2192';
+      btn.disabled = false;
+    });
+  }
+
+  // ── CONFIRMATION ──
+  function buildConfirmation(orderId) {
+    document.getElementById('orderNum').textContent = orderId;
+
+    var speed = document.getElementById('deliverySpeed').value;
+    var now   = new Date();
+    var etaLabel, etaDesc, packTime, deliverTime, arriveTime;
+
+    if (speed === 'instant') {
+      etaLabel = '5\u201310 Minutes';
+      etaDesc  = 'Arriving in just a few minutes!';
+      packTime = 'Right now'; deliverTime = 'In ~3 min'; arriveTime = 'In 5\u201310 min';
+    } else if (speed === 'overnight') {
+      var d1 = new Date(now); d1.setDate(d1.getDate() + 1);
+      etaLabel = 'Overnight';
+      etaDesc  = 'By tomorrow, ' + MONTHS[d1.getMonth()] + ' ' + d1.getDate();
+      packTime = 'Tonight'; deliverTime = 'Early morning'; arriveTime = 'Tomorrow';
+    } else if (speed === 'oneday') {
+      var d2 = new Date(now); d2.setDate(d2.getDate() + 1);
+      etaLabel = '12\u201324 Hours';
+      etaDesc  = 'By ' + DAYS[d2.getDay()] + ', ' + MONTHS[d2.getMonth()] + ' ' + d2.getDate();
+      packTime = 'In ~1 hr'; deliverTime = 'In ~6 hrs'; arriveTime = '12\u201324 hrs';
+    } else {
+      var d3 = new Date(now); d3.setDate(d3.getDate() + 2);
+      etaLabel = '24\u201350 Hours';
+      etaDesc  = 'By ' + DAYS[d3.getDay()] + ', ' + MONTHS[d3.getMonth()] + ' ' + d3.getDate();
+      packTime = 'In ~2 hrs'; deliverTime = 'In ~1 day'; arriveTime = '24\u201350 hrs';
+    }
+
+    document.getElementById('etaTime').textContent = etaLabel;
+    document.getElementById('etaDate').textContent = etaDesc;
+
+    var cashNote = payMethod === 'cash' ? ' \u00b7 Pay driver on arrival' : '';
+    var steps = [
+      { label: 'done',    icon: '\u2713', title: 'Order Placed',       desc: "We've received your order" + cashNote, time: 'Just now' },
+      { label: 'active',  icon: '\ud83d\udce6', title: 'Packing Your Order', desc: 'Your cans are being selected', time: packTime },
+      { label: 'pending', icon: '\ud83d\ude9a', title: 'Out for Delivery',   desc: 'On its way to you',           time: deliverTime },
+      { label: 'pending', icon: '\ud83c\udf89', title: 'Delivered!',         desc: 'Enjoy your sparkling water!', time: arriveTime }
+    ];
+
+    var stepsHtml = '';
+    for (var i = 0; i < steps.length; i++) {
+      var s = steps[i];
+      var dot = s.label === 'done' ? '\u2713' : s.icon;
+      stepsHtml += '<div class="timeline-step">'
+        + '<div class="step-dot ' + s.label + '">' + dot + '</div>'
+        + '<div class="step-info"><h4>' + s.title + '</h4><p>' + s.desc + '</p></div>'
+        + '<div class="step-time">' + s.time + '</div>'
+        + '</div>';
+    }
+    document.getElementById('timelineSteps').innerHTML = stepsHtml;
+  }
+
+  // ── SHOP AGAIN ──
+  function shopAgain() {
+    for (var k in cart) delete cart[k];
+    updateCartCount();
+    var ids = ['berry','mango','kiwi'];
+    for (var i = 0; i < ids.length; i++) {
+      quantities[ids[i]] = 1;
+      document.getElementById('qty-' + ids[i]).textContent = 1;
+    }
+    goTo('shopPage');
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2400);
+  }
+</script>
+</body>
+</html>
