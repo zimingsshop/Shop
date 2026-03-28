@@ -367,6 +367,104 @@
     }
     .cash-icon { font-size: 2.4rem; margin-bottom: .6rem; }
     .cash-notice p { color: var(--mid); font-size: .9rem; line-height: 1.6; }
+  
+    /* ── PROMO CODE SECTION ── */
+    .promo-section {
+      margin: 1.2rem 0 .6rem;
+      background: rgba(255,255,255,.06);
+      border: 1.5px dashed rgba(255,255,255,.22);
+      border-radius: 14px;
+      padding: 1rem 1rem .85rem;
+      position: relative;
+      transition: border-color .35s, background .35s, box-shadow .35s;
+    }
+    .promo-section.promo-valid {
+      border-style: solid;
+      border-color: #6ee87a;
+      background: rgba(110,232,122,.08);
+      box-shadow: 0 0 18px rgba(110,232,122,.18);
+    }
+    .promo-section.promo-invalid {
+      border-style: solid;
+      border-color: #ff7e7e;
+      box-shadow: 0 0 12px rgba(255,126,126,.18);
+      animation: promoShake .4s ease;
+    }
+    @keyframes promoShake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-7px); }
+      40%     { transform: translateX(7px); }
+      60%     { transform: translateX(-4px); }
+      80%     { transform: translateX(4px); }
+    }
+    .promo-label {
+      font-size: .67rem; font-weight: 700; letter-spacing: .13em;
+      text-transform: uppercase; color: rgba(245,240,232,.4);
+      margin-bottom: .6rem; display: flex; align-items: center; gap: .4rem;
+    }
+    .promo-row {
+      display: flex; gap: .5rem;
+    }
+    .promo-row input {
+      flex: 1; padding: .65rem .9rem; border-radius: 9px;
+      border: 1.5px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.07); color: var(--cream);
+      font-family: "DM Sans", sans-serif; font-size: .9rem; font-weight: 700;
+      outline: none; transition: border-color .2s, background .2s;
+      text-transform: uppercase; letter-spacing: .1em;
+    }
+    .promo-row input::placeholder {
+      text-transform: none; letter-spacing: 0;
+      opacity: .32; font-weight: 400; font-size: .82rem;
+    }
+    .promo-row input:focus {
+      border-color: rgba(255,255,255,.42);
+      background: rgba(255,255,255,.11);
+    }
+    .promo-apply-btn {
+      padding: .65rem 1.1rem; border-radius: 9px;
+      background: var(--accent-berry); color: #fff;
+      border: none;
+      font-family: "DM Sans", sans-serif; font-size: .85rem; font-weight: 700;
+      cursor: pointer; transition: filter .2s, transform .15s;
+      white-space: nowrap; letter-spacing: .04em;
+    }
+    .promo-apply-btn:hover  { filter: brightness(1.2); transform: scale(1.05); }
+    .promo-apply-btn:active { transform: scale(.96); }
+    #promoMsg {
+      font-size: .8rem; font-weight: 700; letter-spacing: .01em;
+      min-height: 1.5rem; padding-top: .55rem;
+      display: flex; align-items: center; gap: .35rem;
+    }
+    #promoMsg.success {
+      color: #6ee87a;
+      animation: msgPop .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    #promoMsg.error {
+      color: #ff8e8e;
+      animation: msgPop .35s ease-out;
+    }
+    @keyframes msgPop {
+      from { opacity: 0; transform: translateY(5px) scale(.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .promo-discount-line { color: #6ee87a !important; }
+    .promo-discount-line span:last-child { font-weight: 800 !important; }
+    /* Confetti */
+    .confetti-wrap {
+      position: absolute; inset: 0; pointer-events: none;
+      border-radius: 14px; overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute; width: 7px; height: 7px; border-radius: 2px;
+      animation: cflyOut .65s ease-out forwards;
+      opacity: 0;
+    }
+    @keyframes cflyOut {
+      0%   { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translate(var(--cx), var(--cy)) rotate(var(--cr)) scale(.3); }
+    }
+
   </style>
 </head>
 <body>
@@ -389,7 +487,7 @@
 <!-- ════ PAGE 1: SHOP ════ -->
 <div class="page active" id="shopPage">
   <div class="shop-header">
-    <h1><em>Kirkland's</em><br>Sparkling Collection</h1>
+    <h1> <em>Kirkland's</em><br>Sparkling Collection</h1>
     <p>Premium flavored sparkling water. Bold taste, zero sugar, endless fizz.</p>
   </div>
 
@@ -541,6 +639,15 @@
       <div class="order-summary">
         <h3>Order Summary</h3>
         <div id="summaryItems"></div>
+        <div class="promo-section" id="promoSection">
+          <div class="confetti-wrap" id="confettiWrap"></div>
+          <div class="promo-label">🏷 Promo or Gift Card</div>
+          <div class="promo-row">
+            <input type="text" id="promoInput" placeholder="Enter code..." autocomplete="off" onkeydown="if(event.key==='Enter')applyPromo()" />
+            <button class="promo-apply-btn" onclick="applyPromo()">Apply</button>
+          </div>
+          <div id="promoMsg"></div>
+        </div>
         <div class="order-totals" id="orderTotals"></div>
         <button class="place-order-btn" id="placeOrderBtn" onclick="placeOrder()">Place Order →</button>
       </div>
@@ -691,14 +798,46 @@
     }
     items.innerHTML = html;
 
-    var deliveryCost = getDeliveryCost();
-    var tax   = subtotal * 0.0825;
-    var total = subtotal + deliveryCost + tax;
+    var baseShipping = getDeliveryCost();
+    var discountAmt  = 0;
+    var freeShip     = false;
+    var noTax        = false;
+    var promoLine    = '';
+
+    if (activePromo) {
+      var p = activePromo.promo;
+      if (p.type === 'pct') {
+        discountAmt = subtotal * (p.value / 100);
+        promoLine = '<div class="order-line promo-discount-line"><span>Promo (' + activePromo.code + ')</span><span>-$' + discountAmt.toFixed(2) + '</span></div>';
+      } else if (p.type === 'flat') {
+        discountAmt = Math.min(p.value, subtotal);
+        promoLine = '<div class="order-line promo-discount-line"><span>Promo (' + activePromo.code + ')</span><span>-$' + discountAmt.toFixed(2) + '</span></div>';
+      } else if (p.type === 'shipping') {
+        freeShip = true;
+        promoLine = '<div class="order-line promo-discount-line"><span>Promo (' + activePromo.code + ')</span><span>Free ship!</span></div>';
+      } else if (p.type === 'notax') {
+        noTax = true;
+        promoLine = '<div class="order-line promo-discount-line"><span>Promo (' + activePromo.code + ')</span><span>No tax!</span></div>';
+      } else if (p.type === 'bottles') {
+        promoLine = '<div class="order-line promo-discount-line"><span>Gift Card (' + activePromo.code + ')</span><span>24 bottles!</span></div>';
+      } else if (p.type === 'bottles') {
+        promoLine = '<div class="order-line promo-discount-line"><span>Gift Card (' + activePromo.code + ')</span><span>24 free bottles!</span></div>';
+      } else if (p.type === 'combo') {
+        freeShip = true; noTax = true;
+        promoLine = '<div class="order-line promo-discount-line"><span>Promo (' + activePromo.code + ')</span><span>Ship+Tax free!</span></div>';
+      }
+    }
+
+    var deliveryCost = freeShip ? 0 : baseShipping;
+    var discountedSub = Math.max(0, subtotal - discountAmt);
+    var tax   = noTax ? 0 : discountedSub * 0.0825;
+    var total = discountedSub + deliveryCost + tax;
     var deliveryStr = deliveryCost === 0 ? 'Free' : '$' + deliveryCost.toFixed(2);
 
     totals.innerHTML = '<div class="order-line"><span>Subtotal</span><span>$' + subtotal.toFixed(2) + '</span></div>'
+      + promoLine
       + '<div class="order-line"><span>Delivery</span><span>' + deliveryStr + '</span></div>'
-      + '<div class="order-line"><span>Tax (8.25%)</span><span>$' + tax.toFixed(2) + '</span></div>'
+      + '<div class="order-line"><span>Tax (8.25%)</span><span>' + (noTax ? 'Waived' : '$' + tax.toFixed(2)) + '</span></div>'
       + '<div class="order-total"><span>Total</span><span>$' + total.toFixed(2) + '</span></div>';
   }
 
@@ -719,6 +858,112 @@
     var v = input.value.replace(/\D/g,'');
     if (v.length >= 2) v = v.slice(0,2) + ' / ' + v.slice(2,4);
     input.value = v;
+  }
+
+
+  // ── PROMO CODES ──
+  var PROMO_CODES = {
+    'ZIMSQUAD':    { type: 'pct',      value: 50,  label: '50% off your order!' },
+    'FREESHIP':    { type: 'shipping', value: 0,   label: 'Free shipping applied!' },
+    'NOTAX':       { type: 'notax',    value: 0,   label: 'Tax waived!' },
+    'SAVE5':       { type: 'flat',     value: 5,   label: '$5 off (orders $15+)', minOrder: 15 },
+    'SPARKLING20': { type: 'pct',      value: 20,  label: '20% off your order!' },
+    'GIFTCARD50':  { type: 'bottles',  value: 24,  label: '24 free bottles added!' },
+    'FIRSTSIP':    { type: 'combo',    value: 0,   label: 'Free shipping + no tax!' },
+    'BLACKFRIDAY': { type: 'pct',      value: 75,  label: '75% off — Black Friday deal!' }
+  };
+
+  var activePromo = null;
+
+  function applyPromo() {
+    var code = document.getElementById('promoInput').value.trim().toUpperCase();
+    var msg  = document.getElementById('promoMsg');
+    if (!code) {
+      msg.className = 'error';
+      msg.textContent = 'Enter a code first.';
+      return;
+    }
+    var section = document.getElementById('promoSection');
+    section.classList.remove('promo-valid','promo-invalid');
+    if (!PROMO_CODES[code]) {
+      activePromo = null;
+      msg.className = 'error';
+      msg.textContent = '✗ Invalid code. Try again.';
+      void section.offsetWidth; // reflow for animation restart
+      section.classList.add('promo-invalid');
+      setTimeout(function(){ section.classList.remove('promo-invalid'); }, 600);
+      renderSummary();
+      return;
+    }
+    var promo = PROMO_CODES[code];
+
+    // Check minimum order requirement
+    if (promo.minOrder) {
+      var subtotal = 0;
+      for (var k in cart) subtotal += cart[k].price * cart[k].qty;
+      if (subtotal < promo.minOrder) {
+        activePromo = null;
+        msg.className = 'error';
+        msg.textContent = '✗ ' + code + ' requires a $' + promo.minOrder.toFixed(2) + '+ order.';
+        renderSummary();
+        return;
+      }
+    }
+
+    // Handle gift card: add 24 bottles split across flavors
+    if (promo.type === 'bottles') {
+      var bottleNames = ['Black Raspberry Sparkling', 'Orange Mango Sparkling', 'Kiwi Strawberry Sparkling'];
+      var ids = ['berry', 'mango', 'kiwi'];
+      var perFlavor = Math.floor(promo.value / 3);
+      var remainder = promo.value - (perFlavor * 3);
+      for (var i = 0; i < ids.length; i++) {
+        var qty = perFlavor + (i === 0 ? remainder : 0);
+        if (cart[ids[i]]) {
+          cart[ids[i]].qty += qty;
+        } else {
+          cart[ids[i]] = { name: bottleNames[i], price: 1.99, qty: qty };
+        }
+      }
+      updateCartCount();
+      activePromo = { code: code, promo: promo };
+      msg.className = 'success';
+      msg.textContent = '✓ ' + promo.label + ' (8 per flavor)';
+      section.classList.add('promo-valid');
+      fireConfetti();
+      renderSummary();
+      return;
+    }
+
+    activePromo = { code: code, promo: promo };
+    msg.className = 'success';
+    msg.textContent = '✓ ' + promo.label;
+    section.classList.add('promo-valid');
+    fireConfetti();
+    renderSummary();
+  }
+
+  function fireConfetti() {
+    var wrap = document.getElementById('confettiWrap');
+    wrap.innerHTML = '';
+    var colors = ['#6ee87a','#ffd166','#ff6b9d','#4ecdc4','#c7b3ff','#f5a623'];
+    for (var i = 0; i < 22; i++) {
+      var el = document.createElement('span');
+      el.className = 'confetti-piece';
+      var angle = Math.random() * 360;
+      var dist  = 40 + Math.random() * 80;
+      el.style.cssText =
+        'left:' + (30 + Math.random()*40) + '%;' +
+        'top:' + (20 + Math.random()*60) + '%;' +
+        'background:' + colors[Math.floor(Math.random()*colors.length)] + ';' +
+        '--cx:' + (Math.cos(angle)*dist) + 'px;' +
+        '--cy:' + (Math.sin(angle)*dist) + 'px;' +
+        '--cr:' + (Math.random()*360) + 'deg;' +
+        'animation-delay:' + (Math.random()*0.15) + 's;' +
+        'width:' + (5 + Math.random()*6) + 'px;' +
+        'height:' + (5 + Math.random()*6) + 'px;';
+      wrap.appendChild(el);
+    }
+    setTimeout(function(){ wrap.innerHTML = ''; }, 900);
   }
 
   // ── PLACE ORDER ──
@@ -767,6 +1012,7 @@
       items:          orderLines.join(' | '),
       delivery:       speedLabel,
       payment_method: payMethod === 'cash' ? 'Cash on Delivery' : 'Card (ending ' + document.getElementById('cardNum').value.trim().slice(-4) + ')',
+      promo_code: activePromo ? activePromo.code + ' (' + activePromo.promo.label + ')' : 'None',
       subtotal:       '$' + subtotal.toFixed(2),
       delivery_fee:   deliveryCost === 0 ? 'Free' : '$' + deliveryCost.toFixed(2),
       tax:            '$' + tax.toFixed(2),
